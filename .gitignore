@@ -1,0 +1,5 @@
+config.yaml
+keyfile.json
+vendor/*
+!vendor/vendor.json
+.vscode/*
