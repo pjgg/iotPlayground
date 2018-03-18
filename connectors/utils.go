@@ -64,16 +64,6 @@ func GenerateJWT(projectId, privateKeyFullPath string, expireTimeMin int) (strin
 	})
 	pass, err := token.SignedString(privateKey)
 
-	/*jwtToken := jwt.New(jwt.SigningMethodRS256)
-	claims := jwtToken.Claims.(jwt.MapClaims)
-	if err != nil {
-		log.Errorln(err.Error())
-		return nil, err
-	}
-	claims["iat"] = time.Now().Unix()
-	claims["exp"] = time.Now().Add(time.Minute * time.Duration(expireTimeMin)).Unix()
-	claims["aud"] = projectId
-	jwtTokenString, err := jwtToken.SignedString(privateKey)*/
 	if err != nil {
 		log.Errorln(err.Error())
 		return "", err

@@ -22,7 +22,12 @@ type MqttIotDeviceConnectorTestSuite struct {
 
 func (suite *MqttIotDeviceConnectorTestSuite) TestPublishMsg() {
 	connectorDevices := connectors.NewMqttIotConnector(suite.registryID, suite.deviceIDOne)
-	connectorDevices.PublishMsg(suite.deviceIDOne, "pablo-test", "test")
+	token := connectorDevices.PublishMsg(suite.deviceIDOne, "pablo-test", "test")
+
+	if token.WaitTimeout(time.Minute*time.Duration(1)) && token.Error() != nil {
+		assert.Failf(suite.T(), "error publish MQTT msg: ", token.Error().Error())
+	}
+
 }
 
 func (suite *MqttIotDeviceConnectorTestSuite) SetupTest() {

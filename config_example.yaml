@@ -1,7 +1,7 @@
 gcloud:
   projectID: bq-iot-example-project
   region: europe-west1
-  mqtt: tcp://mqtt.googleapis.com:8883
+  mqtt: ssl://mqtt.googleapis.com:8883
 device:
   publicCredentialsPath: ../ec_public.pem
   privateCredentialsPath: ../ec_private.pem

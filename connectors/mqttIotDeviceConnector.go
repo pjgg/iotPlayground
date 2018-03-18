@@ -53,11 +53,13 @@ func NewMqttIotConnector(registryID, MQTT_deviceID string) MqttIotDeviceConnecto
 		opts.CleanSession = true
 		opts.AutoReconnect = true
 
+		log.Info("ClientID: " + opts.ClientID)
 		cli := paho.NewClient(opts)
 		if token := cli.Connect(); token.Wait() && token.Error() != nil {
 			// Unable to connect to the MQTT broker.
 			log.Errorln("MQTT Unable to connect:")
-			log.Fatalln(token.Error())
+			panic(token.Error())
+			cli.Disconnect(100)
 		}
 		mqttIotDeviceConnector.MQTT_Client = cli
 

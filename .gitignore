@@ -3,3 +3,5 @@ keyfile.json
 vendor/*
 !vendor/vendor.json
 .vscode/*
+connectors/debug.test
+.DS_Store
