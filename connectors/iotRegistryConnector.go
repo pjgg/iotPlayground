@@ -54,8 +54,9 @@ func NewIotRegistryConnector(protocol Protocol, projectID string, region string)
 	return &iotRegistryConnector
 }
 
-func (iotConnector *IotRegistryConnector) GenerateTopicName(topicName string) string {
-	return fmt.Sprintf("projects/%s/topics/%s", iotConnector.projectID, topicName)
+func (iotConnector *IotRegistryConnector) GenerateTopicName(topicName string) (fullTopicName string) {
+	fullTopicName = fmt.Sprintf("projects/%s/topics/%s", iotConnector.projectID, topicName)
+	return
 }
 
 func (iotConnector *IotRegistryConnector) CreateRegistry(registryID string, config []*cloudiot.EventNotificationConfig) (registry *cloudiot.DeviceRegistry, err error) {
@@ -69,13 +70,13 @@ func (iotConnector *IotRegistryConnector) CreateRegistry(registryID string, conf
 	registry, err = iotConnector.Client.Projects.Locations.Registries.Create(parentPath, &registryDef).Do()
 	if err != nil {
 		log.Errorln(err.Error())
+	} else {
+		log.Debugln("Created registry:")
+		log.Debugln("\tID: ", registry.Id)
+		log.Debugln("\tHTTP: ", registry.HttpConfig.HttpEnabledState)
+		log.Debugln("\tMQTT: ", registry.MqttConfig.MqttEnabledState)
+		log.Debugln("\tName: ", registry.Name)
 	}
-
-	log.Debugln("Created registry:")
-	log.Debugln("\tID: ", registry.Id)
-	log.Debugln("\tHTTP: ", registry.HttpConfig.HttpEnabledState)
-	log.Debugln("\tMQTT: ", registry.MqttConfig.MqttEnabledState)
-	log.Debugln("\tName: ", registry.Name)
 
 	return
 }

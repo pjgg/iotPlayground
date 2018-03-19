@@ -2,6 +2,7 @@ package connectors
 
 import (
 	"crypto/tls"
+	"fmt"
 	"sync"
 
 	"github.com/eclipse/paho.mqtt.golang"
@@ -23,6 +24,7 @@ type MqttIotDeviceConnector struct {
 
 type MqttIotDeviceConnectorInterface interface {
 	PublishMsg(toDeviceID, topicName, msg string) mqtt.Token
+	//SubcribeTopic(toDeviceID, topicName string)
 }
 
 var onceMqttDevice sync.Once
@@ -59,7 +61,7 @@ func NewMqttIotConnector(registryID, MQTT_deviceID string) MqttIotDeviceConnecto
 			// Unable to connect to the MQTT broker.
 			log.Errorln("MQTT Unable to connect:")
 			panic(token.Error())
-			cli.Disconnect(100)
+			//cli.Disconnect(100)
 		}
 		mqttIotDeviceConnector.MQTT_Client = cli
 
@@ -69,7 +71,23 @@ func NewMqttIotConnector(registryID, MQTT_deviceID string) MqttIotDeviceConnecto
 }
 
 func (iotConnector *MqttIotDeviceConnector) PublishMsg(toDeviceID, topicName, msg string) (token mqtt.Token) {
-	token = iotConnector.MQTT_Client.Publish("/devices/"+toDeviceID+"/"+topicName, 0, false, msg)
-	token.Wait()
+	//token = iotConnector.MQTT_Client.Publish("/devices/"+toDeviceID+"/"+topicName, 0, false, msg)
+	finalTopicName := fmt.Sprintf("/devices/%s/%s", toDeviceID, topicName)
+	log.Info("Publish Msg to topic " + finalTopicName)
+	if iotConnector.MQTT_Client.IsConnected() {
+		log.Info("Client Connected ")
+	}
+
+	token = iotConnector.MQTT_Client.Publish(finalTopicName, 1, false, msg)
+	if token.Wait() && token.Error() != nil {
+		log.Errorln("MQTT Publish telemetric fail:")
+		panic(token.Error())
+		iotConnector.MQTT_Client.Disconnect(100)
+	}
 	return
 }
+
+/*func (iotConnector *MqttIotDeviceConnector) SubcribeTopic(toDeviceID, topicName string){
+	finalTopicName := fmt.Sprintf("/devices/%s/%s", toDeviceID, topicName)
+	iotConnector.MQTT_Client.Subscribe(finalTopicName, 0, )
+}*/

@@ -22,9 +22,9 @@ type MqttIotDeviceConnectorTestSuite struct {
 
 func (suite *MqttIotDeviceConnectorTestSuite) TestPublishMsg() {
 	connectorDevices := connectors.NewMqttIotConnector(suite.registryID, suite.deviceIDOne)
-	token := connectorDevices.PublishMsg(suite.deviceIDOne, "pablo-test", "test")
+	token := connectorDevices.PublishMsg(suite.deviceIDOne, "events", "test")
 
-	if token.WaitTimeout(time.Minute*time.Duration(1)) && token.Error() != nil {
+	if token.WaitTimeout(time.Minute*time.Duration(10)) && token.Error() != nil {
 		assert.Failf(suite.T(), "error publish MQTT msg: ", token.Error().Error())
 	}
 
@@ -35,7 +35,7 @@ func (suite *MqttIotDeviceConnectorTestSuite) SetupTest() {
 
 	eventNotificationConfigs := []*cloudiot.EventNotificationConfig{
 		{
-			PubsubTopicName: connector.GenerateTopicName("pablo-test"),
+			PubsubTopicName: connector.GenerateTopicName("events"),
 		},
 	}
 
@@ -43,13 +43,13 @@ func (suite *MqttIotDeviceConnectorTestSuite) SetupTest() {
 
 	if err != nil {
 		assert.Failf(suite.T(), "error when trying to create a register", err.Error())
+	} else {
+
+		connectorHttpDevices := connectors.NewHttpIotConnector(suite.registryID)
+
+		connectorHttpDevices.CreateDevice(suite.deviceIDOne)
+		connectorHttpDevices.CreateDevice(suite.deviceIDTwo)
 	}
-
-	//connectorMqttDevices := connectors.NewMqttIotConnector(suite.registryID, suite.deviceIDOne)
-	connectorHttpDevices := connectors.NewHttpIotConnector(suite.registryID)
-
-	connectorHttpDevices.CreateDevice(suite.deviceIDOne)
-	connectorHttpDevices.CreateDevice(suite.deviceIDTwo)
 }
 
 func (suite *MqttIotDeviceConnectorTestSuite) TearDownTest() {
