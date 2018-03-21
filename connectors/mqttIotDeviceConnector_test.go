@@ -21,8 +21,9 @@ type MqttIotDeviceConnectorTestSuite struct {
 }
 
 func (suite *MqttIotDeviceConnectorTestSuite) TestPublishMsg() {
+	msg := "test"
 	connectorDevices := connectors.NewMqttIotConnector(suite.registryID, suite.deviceIDOne)
-	token := connectorDevices.PublishMsg(suite.deviceIDOne, "events", "test")
+	token := connectorDevices.PublishMsg(suite.deviceIDOne, suite.configuration.DeviceTelemetryTopic, msg, connectors.AtMostOnce)
 
 	if token.WaitTimeout(time.Minute*time.Duration(10)) && token.Error() != nil {
 		assert.Failf(suite.T(), "error publish MQTT msg: ", token.Error().Error())
@@ -35,7 +36,7 @@ func (suite *MqttIotDeviceConnectorTestSuite) SetupTest() {
 
 	eventNotificationConfigs := []*cloudiot.EventNotificationConfig{
 		{
-			PubsubTopicName: connector.GenerateTopicName("events"),
+			PubsubTopicName: connector.GenerateTopicName(suite.configuration.DeviceTelemetryTopic),
 		},
 	}
 

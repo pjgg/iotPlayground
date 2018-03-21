@@ -9,11 +9,13 @@ import (
 )
 
 type Configuration struct {
-	GcloudProjectID      string
-	GcloudRegion         string
-	DevicePublicKeyPath  string
-	DevicePrivateKeyPath string
-	MqttEndpoint         string
+	GcloudProjectID          string
+	GcloudRegion             string
+	DevicePublicKeyPath      string
+	DevicePrivateKeyPath     string
+	DeviceTelemetryTopic     string
+	DeviceJwtExpirationInMin int
+	MqttEndpoint             string
 }
 
 var onceConfiguration sync.Once
@@ -36,13 +38,17 @@ func New() *Configuration {
 		ConfigurationInstance.DevicePublicKeyPath = viper.GetString("device.publicKeyPath")
 		ConfigurationInstance.DevicePrivateKeyPath = viper.GetString("device.privateKeyPath")
 		ConfigurationInstance.MqttEndpoint = viper.GetString("gcloud.mqtt")
+		ConfigurationInstance.DeviceTelemetryTopic = viper.GetString("device.telemetryTopic")
+		ConfigurationInstance.DeviceJwtExpirationInMin = viper.GetInt("device.jwtExpirationInMin")
 
 		log.WithFields(log.Fields{
-			"GcloudProjectID":      ConfigurationInstance.GcloudProjectID,
-			"GcloudRegion":         ConfigurationInstance.GcloudRegion,
-			"DevicePublicKeyPath":  ConfigurationInstance.DevicePublicKeyPath,
-			"DevicePrivateKeyPath": ConfigurationInstance.DevicePrivateKeyPath,
-			"MqttEndpoint":         ConfigurationInstance.MqttEndpoint,
+			"GcloudProjectID":          ConfigurationInstance.GcloudProjectID,
+			"GcloudRegion":             ConfigurationInstance.GcloudRegion,
+			"DevicePublicKeyPath":      ConfigurationInstance.DevicePublicKeyPath,
+			"DevicePrivateKeyPath":     ConfigurationInstance.DevicePrivateKeyPath,
+			"MqttEndpoint":             ConfigurationInstance.MqttEndpoint,
+			"DeviceTelemetryTopic":     ConfigurationInstance.DeviceTelemetryTopic,
+			"DeviceJwtExpirationInMin": ConfigurationInstance.DeviceJwtExpirationInMin,
 		}).Info("configuration loaded")
 	})
 

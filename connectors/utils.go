@@ -85,3 +85,19 @@ var noneName = [...]string{
 func (none None) String() string {
 	return noneName[none-1]
 }
+
+type QoS int
+
+const (
+	AtMostOnce QoS = 1 + iota
+	AtLeastOnce
+)
+
+var qosValue = [...]byte{
+	0,
+	1,
+}
+
+func (qos QoS) Value() byte {
+	return qosValue[qos-1]
+}

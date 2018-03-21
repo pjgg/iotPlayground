@@ -6,3 +6,4 @@ device:
   publicCredentialsPath: ../ec_public.pem
   privateCredentialsPath: ../ec_private.pem
   jwtExpirationInMin: 60
+  telemetryTopic: events
