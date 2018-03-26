@@ -11,13 +11,15 @@ import (
 	cloudiot "google.golang.org/api/cloudiot/v1"
 )
 
-type IotRegistryConnector struct {
+// HTTPIotRegistryConnector handler registry admin request.
+type HTTPIotRegistryConnector struct {
 	Client    *cloudiot.Service
 	projectID string
 	region    string
 }
 
-type IotRegistryConnectorInterface interface {
+// HTTPIotRegistryConnectorInterface define registry IoT admin request behavior.
+type HTTPIotRegistryConnectorInterface interface {
 	CreateRegistry(registryID string, config []*cloudiot.EventNotificationConfig) (*cloudiot.DeviceRegistry, error)
 	DeleteRegistry(registryID string) (*cloudiot.Empty, error)
 	GetRegistry(registryID string) (*cloudiot.DeviceRegistry, error)
@@ -28,9 +30,10 @@ type IotRegistryConnectorInterface interface {
 }
 
 var onceRegistry sync.Once
-var iotRegistryConnector IotRegistryConnector
+var iotRegistryConnector HTTPIotRegistryConnector
 
-func NewIotRegistryConnector(protocol Protocol, projectID string, region string) IotRegistryConnectorInterface {
+// NewHTTPIotRegistryConnector create a single instance of HTTPIotRegistryConnector
+func NewHTTPIotRegistryConnector(protocol Protocol, projectID string, region string) HTTPIotRegistryConnectorInterface {
 
 	onceRegistry.Do(func() {
 		ctx := context.Background()
@@ -54,12 +57,14 @@ func NewIotRegistryConnector(protocol Protocol, projectID string, region string)
 	return &iotRegistryConnector
 }
 
-func (iotConnector *IotRegistryConnector) GenerateTopicName(topicName string) (fullTopicName string) {
+// GenerateTopicName create a topic name according google spec.
+func (iotConnector *HTTPIotRegistryConnector) GenerateTopicName(topicName string) (fullTopicName string) {
 	fullTopicName = fmt.Sprintf("projects/%s/topics/%s", iotConnector.projectID, topicName)
 	return
 }
 
-func (iotConnector *IotRegistryConnector) CreateRegistry(registryID string, config []*cloudiot.EventNotificationConfig) (registry *cloudiot.DeviceRegistry, err error) {
+// CreateRegistry create a device registry witha  given registryID.
+func (iotConnector *HTTPIotRegistryConnector) CreateRegistry(registryID string, config []*cloudiot.EventNotificationConfig) (registry *cloudiot.DeviceRegistry, err error) {
 
 	registryDef := cloudiot.DeviceRegistry{
 		Id: registryID,
@@ -78,7 +83,8 @@ func (iotConnector *IotRegistryConnector) CreateRegistry(registryID string, conf
 	return
 }
 
-func (iotConnector *IotRegistryConnector) DeleteRegistry(registryID string) (empty *cloudiot.Empty, err error) {
+// DeleteRegistry remove an existing registry based in his registryID.
+func (iotConnector *HTTPIotRegistryConnector) DeleteRegistry(registryID string) (empty *cloudiot.Empty, err error) {
 	name := fmt.Sprintf("projects/%s/locations/%s/registries/%s", iotConnector.projectID, iotConnector.region, registryID)
 	if iotConnector.Client.Projects.Locations.Registries.Delete(name).Do(); err == nil {
 		log.Debugln("Deleted registry")
@@ -87,14 +93,16 @@ func (iotConnector *IotRegistryConnector) DeleteRegistry(registryID string) (emp
 	return
 }
 
-func (iotConnector *IotRegistryConnector) GetRegistry(registryID string) (registry *cloudiot.DeviceRegistry, err error) {
+// GetRegistry retrieve a registry based in his registryID.
+func (iotConnector *HTTPIotRegistryConnector) GetRegistry(registryID string) (registry *cloudiot.DeviceRegistry, err error) {
 	parent := fmt.Sprintf("projects/%s/locations/%s/registries/%s", iotConnector.projectID, iotConnector.region, registryID)
 	registry, err = iotConnector.Client.Projects.Locations.Registries.Get(parent).Do()
 
 	return
 }
 
-func (iotConnector *IotRegistryConnector) GetRegistryIam(registryID string) (policy *cloudiot.Policy, err error) {
+// GetRegistryIam retrieve registry Iam based in his registryID.
+func (iotConnector *HTTPIotRegistryConnector) GetRegistryIam(registryID string) (policy *cloudiot.Policy, err error) {
 	var req cloudiot.GetIamPolicyRequest
 	path := fmt.Sprintf("projects/%s/locations/%s/registries/%s", iotConnector.projectID, iotConnector.region, registryID)
 	if policy, err = iotConnector.Client.Projects.Locations.Registries.GetIamPolicy(path, &req).Do(); err == nil {
@@ -110,20 +118,8 @@ func (iotConnector *IotRegistryConnector) GetRegistryIam(registryID string) (pol
 	return
 }
 
-func (iotConnector *IotRegistryConnector) ListRegistries() (registries []*cloudiot.DeviceRegistry, err error) {
-	parentPath := fmt.Sprintf("projects/%s/locations/%s", iotConnector.projectID, iotConnector.region)
-	if response, err := iotConnector.Client.Projects.Locations.Registries.List(parentPath).Do(); err == nil {
-		fmt.Println("Registries:")
-		for _, registry := range response.DeviceRegistries {
-			log.Debugln("\t", registry.Name)
-		}
-		registries = response.DeviceRegistries
-	}
-
-	return registries, err
-}
-
-func (iotConnector *IotRegistryConnector) SetRegistryIam(registryID string, member string, role string) (policy *cloudiot.Policy, err error) {
+// SetRegistryIam update or create a registry Iam for a given registryID.
+func (iotConnector *HTTPIotRegistryConnector) SetRegistryIam(registryID string, member string, role string) (policy *cloudiot.Policy, err error) {
 	req := cloudiot.SetIamPolicyRequest{
 		Policy: &cloudiot.Policy{
 			Bindings: []*cloudiot.Binding{
@@ -140,4 +136,18 @@ func (iotConnector *IotRegistryConnector) SetRegistryIam(registryID string, memb
 	}
 
 	return
+}
+
+// ListRegistries retrieve a list of registries of the current project.
+func (iotConnector *HTTPIotRegistryConnector) ListRegistries() (registries []*cloudiot.DeviceRegistry, err error) {
+	parentPath := fmt.Sprintf("projects/%s/locations/%s", iotConnector.projectID, iotConnector.region)
+	if response, err := iotConnector.Client.Projects.Locations.Registries.List(parentPath).Do(); err == nil {
+		fmt.Println("Registries:")
+		for _, registry := range response.DeviceRegistries {
+			log.Debugln("\t", registry.Name)
+		}
+		registries = response.DeviceRegistries
+	}
+
+	return registries, err
 }

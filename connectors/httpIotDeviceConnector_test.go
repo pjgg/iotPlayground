@@ -15,7 +15,7 @@ import (
 
 func (suite *IotDeviceConnectorTestSuite) TestCreateDevice() {
 	deviceID := "my-test-device" + randStringRunes(4)
-	connector := connectors.NewHttpIotConnector(suite.registryID)
+	connector := connectors.NewHTTPIotConnector(suite.registryID)
 
 	device, err := connector.CreateDevice(deviceID)
 
@@ -28,7 +28,7 @@ func (suite *IotDeviceConnectorTestSuite) TestCreateDevice() {
 
 func (suite *IotDeviceConnectorTestSuite) TestGetDevice() {
 	deviceID := "my-test-device" + randStringRunes(4)
-	connectorDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connectorDevices := connectors.NewHTTPIotConnector(suite.registryID)
 	connectorDevices.SwapToRegistry(suite.registryID)
 
 	connectorDevices.CreateDevice(deviceID)
@@ -43,7 +43,7 @@ func (suite *IotDeviceConnectorTestSuite) TestGetDevice() {
 
 func (suite *IotDeviceConnectorTestSuite) TestSetDeviceConfig() {
 	deviceID := "my-test-device" + randStringRunes(4)
-	connectorDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connectorDevices := connectors.NewHTTPIotConnector(suite.registryID)
 	connectorDevices.SwapToRegistry(suite.registryID)
 
 	connectorDevices.CreateDevice(deviceID)
@@ -58,7 +58,7 @@ func (suite *IotDeviceConnectorTestSuite) TestSetDeviceConfig() {
 
 func (suite *IotDeviceConnectorTestSuite) TestGetDeviceConfigs() {
 	deviceID := "my-test-device" + randStringRunes(4)
-	connectorDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connectorDevices := connectors.NewHTTPIotConnector(suite.registryID)
 	connectorDevices.CreateDevice(deviceID)
 	connectorDevices.SetDeviceConfig(deviceID, "{networkID:'myNetworkID'}")
 	config, err := connectorDevices.GetDeviceConfigs(deviceID)
@@ -70,7 +70,7 @@ func (suite *IotDeviceConnectorTestSuite) TestGetDeviceConfigs() {
 
 func (suite *IotDeviceConnectorTestSuite) TestGetDeviceStates() {
 	deviceID := "my-test-device" + randStringRunes(4)
-	connectorDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connectorDevices := connectors.NewHTTPIotConnector(suite.registryID)
 	connectorDevices.SwapToRegistry(suite.registryID)
 
 	connectorDevices.CreateDevice(deviceID)
@@ -83,7 +83,7 @@ func (suite *IotDeviceConnectorTestSuite) TestGetDeviceStates() {
 
 func (suite *IotDeviceConnectorTestSuite) TestListDevices() {
 	deviceID := "my-test-device" + randStringRunes(4)
-	connectorDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connectorDevices := connectors.NewHTTPIotConnector(suite.registryID)
 	connectorDevices.SwapToRegistry(suite.registryID)
 
 	connectorDevices.CreateDevice(deviceID)
@@ -96,7 +96,7 @@ func (suite *IotDeviceConnectorTestSuite) TestListDevices() {
 
 func (suite *IotDeviceConnectorTestSuite) TestPatchDevice() {
 	deviceID := "my-test-device" + randStringRunes(4)
-	connectorDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connectorDevices := connectors.NewHTTPIotConnector(suite.registryID)
 	connectorDevices.SwapToRegistry(suite.registryID)
 
 	connectorDevices.CreateDevice(deviceID)
@@ -117,7 +117,7 @@ type IotDeviceConnectorTestSuite struct {
 }
 
 func (suite *IotDeviceConnectorTestSuite) SetupTest() {
-	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
+	connector := connectors.NewHTTPIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
 
 	eventNotificationConfigs := []*cloudiot.EventNotificationConfig{
 		{
@@ -131,8 +131,8 @@ func (suite *IotDeviceConnectorTestSuite) SetupTest() {
 }
 
 func (suite *IotDeviceConnectorTestSuite) TearDownTest() {
-	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
-	connectorDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connector := connectors.NewHTTPIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
+	connectorDevices := connectors.NewHTTPIotConnector(suite.registryID)
 	deviceList, _ := connectorDevices.ListDevices()
 	for _, device := range deviceList {
 		connectorDevices.DeleteDevice(device.Id)

@@ -8,6 +8,7 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
+// Protocol must be HTTP or MQTT
 type Protocol int
 
 const (
@@ -26,13 +27,14 @@ func (protocol Protocol) String() string {
 	return protocolName[protocol-1]
 }
 
+// KeyType must be RSA_PEM or ES256_PEM
 type KeyType int
 
 const (
-	// RSA_X509_PEM ...
-	RSA_PEM KeyType = 1 + iota
+	// RSA_PEM ...
+	rsaPem KeyType = 1 + iota
 	// ES256_PEM ...
-	ES256_PEM
+	es256Pem
 )
 
 var keyTypeName = [...]string{
@@ -44,7 +46,8 @@ func (keyType KeyType) String() string {
 	return keyTypeName[keyType-1]
 }
 
-func GenerateJWT(projectId, privateKeyFullPath string, expireTimeMin int) (string, error) {
+// GenerateJWT will generate a signed JWT token
+func GenerateJWT(projectID, privateKeyFullPath string, expireTimeMin int) (string, error) {
 	privateKeyBytes, err := ioutil.ReadFile(privateKeyFullPath)
 	if err != nil {
 		log.Errorln(err.Error())
@@ -60,7 +63,7 @@ func GenerateJWT(projectId, privateKeyFullPath string, expireTimeMin int) (strin
 	token := jwt.NewWithClaims(jwt.GetSigningMethod(jwt.SigningMethodRS256.Alg()), &jwt.StandardClaims{
 		IssuedAt:  t.Unix(),
 		ExpiresAt: t.Add(time.Minute * time.Duration(expireTimeMin)).Unix(),
-		Audience:  projectId,
+		Audience:  projectID,
 	})
 	pass, err := token.SignedString(privateKey)
 
@@ -72,9 +75,11 @@ func GenerateJWT(projectId, privateKeyFullPath string, expireTimeMin int) (strin
 	return pass, nil
 }
 
+// None type represent a empty type.
 type None int
 
 const (
+	// NONE ...
 	NONE None = 1 + iota
 )
 
@@ -86,10 +91,13 @@ func (none None) String() string {
 	return noneName[none-1]
 }
 
+// QoS type represent the message consumption type.
 type QoS int
 
 const (
+	// AtMostOnce ...
 	AtMostOnce QoS = 1 + iota
+	// AtLeastOnce ...
 	AtLeastOnce
 )
 
@@ -98,6 +106,7 @@ var qosValue = [...]byte{
 	1,
 }
 
+// Value returns consumption type value.
 func (qos QoS) Value() byte {
 	return qosValue[qos-1]
 }

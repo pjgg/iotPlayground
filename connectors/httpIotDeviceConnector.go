@@ -14,8 +14,9 @@ import (
 	cloudiot "google.golang.org/api/cloudiot/v1"
 )
 
-type HttpIotDeviceConnector struct {
-	HTTP_Client    *cloudiot.Service
+// HTTPIotDeviceConnector handler devices admin request.
+type HTTPIotDeviceConnector struct {
+	HTTPClient     *cloudiot.Service
 	publicKeyPath  string
 	privateKeyPath string
 	projectID      string
@@ -24,7 +25,8 @@ type HttpIotDeviceConnector struct {
 	registryID     string
 }
 
-type HttpIotDeviceConnectorInterface interface {
+// HTTPIotDeviceConnectorInterface define device IoT admin request behavior.
+type HTTPIotDeviceConnectorInterface interface {
 	SwapToRegistry(registryID string)
 	CreateDevice(deviceID string) (*cloudiot.Device, error)
 	DeleteDevice(deviceID string) (*cloudiot.Empty, error)
@@ -36,12 +38,13 @@ type HttpIotDeviceConnectorInterface interface {
 	PatchDevice(deviceID string, newDevice *cloudiot.Device, field string) (*cloudiot.Device, error)
 }
 
-var onceHttpDevice sync.Once
-var httpIotDeviceConnector HttpIotDeviceConnector
+var onceHTTPDevice sync.Once
+var httpIotDeviceConnector HTTPIotDeviceConnector
 
-func NewHttpIotConnector(registryID string) HttpIotDeviceConnectorInterface {
+// NewHTTPIotConnector create a single instance of HTTPIotDeviceConnector
+func NewHTTPIotConnector(registryID string) HTTPIotDeviceConnectorInterface {
 
-	onceHttpDevice.Do(func() {
+	onceHTTPDevice.Do(func() {
 		conf := configuration.New()
 		ctx := context.Background()
 
@@ -50,7 +53,7 @@ func NewHttpIotConnector(registryID string) HttpIotDeviceConnectorInterface {
 			log.Fatalln(err.Error())
 		}
 
-		httpIotDeviceConnector.HTTP_Client, err = cloudiot.New(httpClient)
+		httpIotDeviceConnector.HTTPClient, err = cloudiot.New(httpClient)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -58,7 +61,7 @@ func NewHttpIotConnector(registryID string) HttpIotDeviceConnectorInterface {
 		httpIotDeviceConnector.registryID = registryID
 		httpIotDeviceConnector.publicKeyPath = conf.DevicePublicKeyPath
 		httpIotDeviceConnector.privateKeyPath = conf.DevicePrivateKeyPath
-		httpIotDeviceConnector.keyType = RSA_PEM
+		httpIotDeviceConnector.keyType = rsaPem
 		httpIotDeviceConnector.projectID = conf.GcloudProjectID
 		httpIotDeviceConnector.region = conf.GcloudRegion
 
@@ -67,11 +70,13 @@ func NewHttpIotConnector(registryID string) HttpIotDeviceConnectorInterface {
 	return &httpIotDeviceConnector
 }
 
-func (iotConnector *HttpIotDeviceConnector) SwapToRegistry(registryID string) {
+// SwapToRegistry overwrite HTTP otDeviceConnector local device registry ID, so all device request will be thrown against this registryID
+func (iotConnector *HTTPIotDeviceConnector) SwapToRegistry(registryID string) {
 	iotConnector.registryID = registryID
 }
 
-func (iotConnector *HttpIotDeviceConnector) CreateDevice(deviceID string) (device *cloudiot.Device, err error) {
+// CreateDevice will create a device over a previous given registryID.
+func (iotConnector *HTTPIotDeviceConnector) CreateDevice(deviceID string) (device *cloudiot.Device, err error) {
 
 	keyBytes, err := ioutil.ReadFile(iotConnector.publicKeyPath)
 	if err != nil {
@@ -91,7 +96,7 @@ func (iotConnector *HttpIotDeviceConnector) CreateDevice(deviceID string) (devic
 	}
 
 	parent := fmt.Sprintf("projects/%s/locations/%s/registries/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID)
-	if device, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.Create(parent, &deviceDef).Do(); err == nil {
+	if device, err = iotConnector.HTTPClient.Projects.Locations.Registries.Devices.Create(parent, &deviceDef).Do(); err == nil {
 		log.Debugln("Successfully created device.")
 		log.Debugln("\tID: ", device.Id)
 		log.Debugln("\tName: ", device.Name)
@@ -100,18 +105,20 @@ func (iotConnector *HttpIotDeviceConnector) CreateDevice(deviceID string) (devic
 	return
 }
 
-func (iotConnector *HttpIotDeviceConnector) DeleteDevice(deviceID string) (response *cloudiot.Empty, err error) {
+// DeleteDevice will delete a device over a previous given registryID.
+func (iotConnector *HTTPIotDeviceConnector) DeleteDevice(deviceID string) (response *cloudiot.Empty, err error) {
 	path := fmt.Sprintf("projects/%s/locations/%s/registries/%s/devices/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID, deviceID)
-	if response, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.Delete(path).Do(); err == nil {
+	if response, err = iotConnector.HTTPClient.Projects.Locations.Registries.Devices.Delete(path).Do(); err == nil {
 		log.Debugln("Deleted device!")
 	}
 
 	return
 }
 
-func (iotConnector *HttpIotDeviceConnector) GetDevice(deviceID string) (device *cloudiot.Device, err error) {
+// GetDevice will retrieve a device, if is a member of a registryID.
+func (iotConnector *HTTPIotDeviceConnector) GetDevice(deviceID string) (device *cloudiot.Device, err error) {
 	path := fmt.Sprintf("projects/%s/locations/%s/registries/%s/devices/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID, deviceID)
-	if device, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.Get(path).Do(); err == nil {
+	if device, err = iotConnector.HTTPClient.Projects.Locations.Registries.Devices.Get(path).Do(); err == nil {
 		log.Debugln("\tId: ", device.Id)
 		for _, credential := range device.Credentials {
 			log.Debugln("\t\tCredential Expire: ", credential.ExpirationTime)
@@ -130,9 +137,10 @@ func (iotConnector *HttpIotDeviceConnector) GetDevice(deviceID string) (device *
 	return
 }
 
-func (iotConnector *HttpIotDeviceConnector) GetDeviceConfigs(deviceID string) (configs []*cloudiot.DeviceConfig, err error) {
+// GetDeviceConfigs will retrieve a device configuration, if is a member of a registryID.
+func (iotConnector *HTTPIotDeviceConnector) GetDeviceConfigs(deviceID string) (configs []*cloudiot.DeviceConfig, err error) {
 	path := fmt.Sprintf("projects/%s/locations/%s/registries/%s/devices/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID, deviceID)
-	if response, err := iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.ConfigVersions.List(path).Do(); err == nil {
+	if response, err := iotConnector.HTTPClient.Projects.Locations.Registries.Devices.ConfigVersions.List(path).Do(); err == nil {
 		log.Debugln("Successfully retrieved device config!")
 		configs = response.DeviceConfigs
 		for _, config := range response.DeviceConfigs {
@@ -143,9 +151,10 @@ func (iotConnector *HttpIotDeviceConnector) GetDeviceConfigs(deviceID string) (c
 	return
 }
 
-func (iotConnector *HttpIotDeviceConnector) GetDeviceStates(deviceID string) (states []*cloudiot.DeviceState, err error) {
+// GetDeviceStates will retrieve a device states, if is a member of a registryID.
+func (iotConnector *HTTPIotDeviceConnector) GetDeviceStates(deviceID string) (states []*cloudiot.DeviceState, err error) {
 	path := fmt.Sprintf("projects/%s/locations/%s/registries/%s/devices/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID, deviceID)
-	if response, err := iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.States.List(path).Do(); err == nil {
+	if response, err := iotConnector.HTTPClient.Projects.Locations.Registries.Devices.States.List(path).Do(); err == nil {
 		log.Debugln("Successfully retrieved device states!")
 		states = response.DeviceStates
 		for _, state := range response.DeviceStates {
@@ -156,9 +165,10 @@ func (iotConnector *HttpIotDeviceConnector) GetDeviceStates(deviceID string) (st
 	return
 }
 
-func (iotConnector *HttpIotDeviceConnector) ListDevices() (devices []*cloudiot.Device, err error) {
+// ListDevices will retrieve a list of devices that are member of a registryID.
+func (iotConnector *HTTPIotDeviceConnector) ListDevices() (devices []*cloudiot.Device, err error) {
 	parent := fmt.Sprintf("projects/%s/locations/%s/registries/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID)
-	if response, err := iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.List(parent).Do(); err == nil {
+	if response, err := iotConnector.HTTPClient.Projects.Locations.Registries.Devices.List(parent).Do(); err == nil {
 		log.Debugln("Successfully retrieved devices!")
 		devices = response.Devices
 		log.Debugln("Devices:")
@@ -170,23 +180,25 @@ func (iotConnector *HttpIotDeviceConnector) ListDevices() (devices []*cloudiot.D
 	return
 }
 
-func (iotConnector *HttpIotDeviceConnector) PatchDevice(deviceID string, newDevice *cloudiot.Device, field string) (device *cloudiot.Device, err error) {
+// PatchDevice make a partial update over a device, if is a member of a registryID.
+func (iotConnector *HTTPIotDeviceConnector) PatchDevice(deviceID string, newDevice *cloudiot.Device, field string) (device *cloudiot.Device, err error) {
 
 	parent := fmt.Sprintf("projects/%s/locations/%s/registries/%s/devices/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID, deviceID)
-	if device, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.Patch(parent, newDevice).UpdateMask(field).Do(); err == nil {
+	if device, err = iotConnector.HTTPClient.Projects.Locations.Registries.Devices.Patch(parent, newDevice).UpdateMask(field).Do(); err == nil {
 		log.Debugln("Successfully patched device.")
 	}
 
 	return
 }
 
-func (iotConnector *HttpIotDeviceConnector) SetDeviceConfig(deviceID string, configData string) (deviceConfig *cloudiot.DeviceConfig, err error) {
+// SetDeviceConfig will update and push to server a device configuration.
+func (iotConnector *HTTPIotDeviceConnector) SetDeviceConfig(deviceID string, configData string) (deviceConfig *cloudiot.DeviceConfig, err error) {
 	req := cloudiot.ModifyCloudToDeviceConfigRequest{
 		BinaryData: base64.StdEncoding.EncodeToString([]byte(configData)),
 	}
 
 	path := fmt.Sprintf("projects/%s/locations/%s/registries/%s/devices/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID, deviceID)
-	if deviceConfig, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.ModifyCloudToDeviceConfig(path, &req).Do(); err == nil {
+	if deviceConfig, err = iotConnector.HTTPClient.Projects.Locations.Registries.Devices.ModifyCloudToDeviceConfig(path, &req).Do(); err == nil {
 		fmt.Fprintf(os.Stdout, "Config set!\nVersion now: %d", deviceConfig.Version)
 	}
 

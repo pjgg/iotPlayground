@@ -13,7 +13,7 @@ import (
 )
 
 func (suite *IotRegistryConnectorTestSuite) TestGenerateTopicName() {
-	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
+	connector := connectors.NewHTTPIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
 
 	expectedTopicName := "projects/" + suite.configuration.GcloudProjectID + "/topics/" + suite.configuration.DeviceTelemetryTopic
 	result := connector.GenerateTopicName(suite.configuration.DeviceTelemetryTopic)
@@ -23,7 +23,7 @@ func (suite *IotRegistryConnectorTestSuite) TestGenerateTopicName() {
 }
 
 func (suite *IotRegistryConnectorTestSuite) TestGetRegistry() {
-	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
+	connector := connectors.NewHTTPIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
 
 	registry, err := connector.GetRegistry(suite.registryID)
 	assert.NoError(suite.T(), err, "UnexpectedError")
@@ -33,14 +33,14 @@ func (suite *IotRegistryConnectorTestSuite) TestGetRegistry() {
 }
 
 func (suite *IotRegistryConnectorTestSuite) listRegistries() {
-	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
+	connector := connectors.NewHTTPIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
 
 	registries, _ := connector.ListRegistries()
 	assert.EqualValues(suite.T(), 1, len(registries))
 }
 
 func (suite *IotRegistryConnectorTestSuite) setRegistryIamTest() {
-	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
+	connector := connectors.NewHTTPIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
 
 	policy, _ := connector.SetRegistryIam(suite.registryID, "pablosDevice@bq.com", "admin")
 	assert.NotNil(suite.T(), policy)
@@ -48,7 +48,7 @@ func (suite *IotRegistryConnectorTestSuite) setRegistryIamTest() {
 }
 
 func (suite *IotRegistryConnectorTestSuite) getRegistryIamTest() {
-	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
+	connector := connectors.NewHTTPIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
 	policy, _ := connector.GetRegistryIam(suite.registryID)
 	assert.NotNil(suite.T(), policy)
 	assert.EqualValues(suite.T(), policy.Version, 1)
@@ -61,7 +61,7 @@ type IotRegistryConnectorTestSuite struct {
 }
 
 func (suite *IotRegistryConnectorTestSuite) SetupTest() {
-	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
+	connector := connectors.NewHTTPIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
 
 	eventNotificationConfigs := []*cloudiot.EventNotificationConfig{
 		{
@@ -75,7 +75,7 @@ func (suite *IotRegistryConnectorTestSuite) SetupTest() {
 }
 
 func (suite *IotRegistryConnectorTestSuite) TearDownTest() {
-	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
+	connector := connectors.NewHTTPIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
 	connector.DeleteRegistry(suite.registryID)
 }
 

@@ -13,8 +13,9 @@ import (
 	"github.com/pjgg/iotPlayground/configuration"
 )
 
-type MqttIotDeviceConnector struct {
-	MQTT_Client    mqtt.Client
+// MQTTIotDeviceConnector handler devices telemetry communication.
+type MQTTIotDeviceConnector struct {
+	MQTTClient     mqtt.Client
 	publicKeyPath  string
 	privateKeyPath string
 	projectID      string
@@ -23,30 +24,32 @@ type MqttIotDeviceConnector struct {
 	registryID     string
 }
 
-type MqttIotDeviceConnectorInterface interface {
+// MQTTIotDeviceConnectorInterface define device telemetry behavior.
+type MQTTIotDeviceConnectorInterface interface {
 	PublishMsg(toDeviceID, topicName, msg string, delivery QoS) mqtt.Token
 }
 
 var onceMqttDevice sync.Once
-var mqttIotDeviceConnector MqttIotDeviceConnector
+var mqttIotDeviceConnector MQTTIotDeviceConnector
 
-const MQTT_RETRIES = 5
-const MQTT_DELAY_SECOND = 5
+const mqttRetries = 5
+const mqttDelaySecond = 5
 
-func NewMqttIotConnector(registryID, MQTT_deviceID string) MqttIotDeviceConnectorInterface {
+// NewMQTTIotConnector create a single MQTTIotDeviceConnector instance.
+func NewMQTTIotConnector(registryID, MQTTdeviceID string) MQTTIotDeviceConnectorInterface {
 
 	onceMqttDevice.Do(func() {
 		conf := configuration.New()
 		mqttIotDeviceConnector.registryID = registryID
 		mqttIotDeviceConnector.publicKeyPath = conf.DevicePublicKeyPath
 		mqttIotDeviceConnector.privateKeyPath = conf.DevicePrivateKeyPath
-		mqttIotDeviceConnector.keyType = RSA_PEM
+		mqttIotDeviceConnector.keyType = rsaPem
 		mqttIotDeviceConnector.projectID = conf.GcloudProjectID
 		mqttIotDeviceConnector.region = conf.GcloudRegion
 		jwt, _ := GenerateJWT(conf.GcloudProjectID, conf.DevicePrivateKeyPath, conf.DeviceJwtExpirationInMin)
 		opts := paho.NewClientOptions()
 
-		opts.SetClientID("projects/" + conf.GcloudProjectID + "/locations/" + conf.GcloudRegion + "/registries/" + registryID + "/devices/" + MQTT_deviceID).
+		opts.SetClientID("projects/" + conf.GcloudProjectID + "/locations/" + conf.GcloudRegion + "/registries/" + registryID + "/devices/" + MQTTdeviceID).
 			AddBroker(conf.MqttEndpoint).
 			SetUsername("unused").
 			SetTLSConfig(&tls.Config{MinVersion: tls.VersionTLS12}).
@@ -57,24 +60,25 @@ func NewMqttIotConnector(registryID, MQTT_deviceID string) MqttIotDeviceConnecto
 		opts.AutoReconnect = true
 
 		log.Info("ClientID: " + opts.ClientID)
-		mqttIotDeviceConnector.MQTT_Client = paho.NewClient(opts)
-		mqttIotDeviceConnector.mqttConnect(MQTT_RETRIES, MQTT_DELAY_SECOND)
+		mqttIotDeviceConnector.MQTTClient = paho.NewClient(opts)
+		mqttIotDeviceConnector.mqttConnect(mqttRetries, mqttDelaySecond)
 
 	})
 
 	return &mqttIotDeviceConnector
 }
 
-func (iotConnector *MqttIotDeviceConnector) PublishMsg(toDeviceID, topicName, msg string, delivery QoS) (token mqtt.Token) {
+// PublishMsg push a mqtt message to google mqtt broker. Thids message will be propagated to a pub/sub topic.
+func (iotConnector *MQTTIotDeviceConnector) PublishMsg(toDeviceID, topicName, msg string, delivery QoS) (token mqtt.Token) {
 
 	finalTopicName := fmt.Sprintf("/devices/%s/%s", toDeviceID, topicName)
 	log.Info("Publish Msg to topic " + finalTopicName)
-	if !iotConnector.MQTT_Client.IsConnected() {
+	if !iotConnector.MQTTClient.IsConnected() {
 		log.Info("Client Not Connected. Reconnecting... ")
-		mqttIotDeviceConnector.mqttConnect(MQTT_RETRIES, MQTT_DELAY_SECOND)
+		mqttIotDeviceConnector.mqttConnect(mqttRetries, mqttDelaySecond)
 	}
 
-	token = iotConnector.MQTT_Client.Publish(finalTopicName, delivery.Value(), false, msg)
+	token = iotConnector.MQTTClient.Publish(finalTopicName, delivery.Value(), false, msg)
 	if token.Wait() && token.Error() != nil {
 		log.Errorln("MQTT Publish telemetric fail:")
 		panic(token.Error())
@@ -83,16 +87,16 @@ func (iotConnector *MqttIotDeviceConnector) PublishMsg(toDeviceID, topicName, ms
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Disconecting Mqtt client ...", r)
-			iotConnector.MQTT_Client.Disconnect(1)
+			iotConnector.MQTTClient.Disconnect(1)
 		}
 	}()
 
 	return
 }
 
-func (iotConnector *MqttIotDeviceConnector) mqttConnect(retriesAmount, elapsed int) (success bool) {
+func (iotConnector *MQTTIotDeviceConnector) mqttConnect(retriesAmount, elapsed int) (success bool) {
 	success = true
-	if token := iotConnector.MQTT_Client.Connect(); token.Wait() && token.Error() != nil {
+	if token := iotConnector.MQTTClient.Connect(); token.Wait() && token.Error() != nil {
 		success = false
 		log.Errorln("MQTT Unable to connect:")
 		panic(token.Error())
@@ -101,7 +105,7 @@ func (iotConnector *MqttIotDeviceConnector) mqttConnect(retriesAmount, elapsed i
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Disconecting Mqtt client ...", r)
-			iotConnector.MQTT_Client.Disconnect(1)
+			iotConnector.MQTTClient.Disconnect(1)
 			if retriesAmount > 0 {
 				fmt.Println("Retrying Mqtt connection ...")
 				iotConnector.connectionRetry(retriesAmount, elapsed)
@@ -111,7 +115,7 @@ func (iotConnector *MqttIotDeviceConnector) mqttConnect(retriesAmount, elapsed i
 	return
 }
 
-func (iotConnector *MqttIotDeviceConnector) connectionRetry(retriesAmount, elapsed int) {
+func (iotConnector *MQTTIotDeviceConnector) connectionRetry(retriesAmount, elapsed int) {
 	retriesAmount--
 	for range time.Tick(time.Duration(elapsed) * time.Second) {
 		iotConnector.mqttConnect(retriesAmount, elapsed)

@@ -22,7 +22,7 @@ type MqttIotDeviceConnectorTestSuite struct {
 
 func (suite *MqttIotDeviceConnectorTestSuite) TestPublishMsg() {
 	msg := "test"
-	connectorDevices := connectors.NewMqttIotConnector(suite.registryID, suite.deviceIDOne)
+	connectorDevices := connectors.NewMQTTIotConnector(suite.registryID, suite.deviceIDOne)
 	token := connectorDevices.PublishMsg(suite.deviceIDOne, suite.configuration.DeviceTelemetryTopic, msg, connectors.AtMostOnce)
 
 	if token.WaitTimeout(time.Minute*time.Duration(10)) && token.Error() != nil {
@@ -32,7 +32,7 @@ func (suite *MqttIotDeviceConnectorTestSuite) TestPublishMsg() {
 }
 
 func (suite *MqttIotDeviceConnectorTestSuite) SetupTest() {
-	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
+	connector := connectors.NewHTTPIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
 
 	eventNotificationConfigs := []*cloudiot.EventNotificationConfig{
 		{
@@ -43,17 +43,17 @@ func (suite *MqttIotDeviceConnectorTestSuite) SetupTest() {
 	_, err := connector.CreateRegistry(suite.registryID, eventNotificationConfigs)
 	assert.NoError(suite.T(), err, "error publish MQTT")
 
-	connectorHttpDevices := connectors.NewHttpIotConnector(suite.registryID)
-	connectorHttpDevices.SwapToRegistry(suite.registryID)
+	connectorHTTPDevices := connectors.NewHTTPIotConnector(suite.registryID)
+	connectorHTTPDevices.SwapToRegistry(suite.registryID)
 
-	connectorHttpDevices.CreateDevice(suite.deviceIDOne)
-	connectorHttpDevices.CreateDevice(suite.deviceIDTwo)
+	connectorHTTPDevices.CreateDevice(suite.deviceIDOne)
+	connectorHTTPDevices.CreateDevice(suite.deviceIDTwo)
 
 }
 
 func (suite *MqttIotDeviceConnectorTestSuite) TearDownTest() {
-	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
-	connectorHttpDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connector := connectors.NewHTTPIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
+	connectorHttpDevices := connectors.NewHTTPIotConnector(suite.registryID)
 
 	deviceList, _ := connectorHttpDevices.ListDevices()
 	for _, device := range deviceList {
