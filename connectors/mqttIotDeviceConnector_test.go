@@ -26,7 +26,7 @@ func (suite *MqttIotDeviceConnectorTestSuite) TestPublishMsg() {
 	token := connectorDevices.PublishMsg(suite.deviceIDOne, suite.configuration.DeviceTelemetryTopic, msg, connectors.AtMostOnce)
 
 	if token.WaitTimeout(time.Minute*time.Duration(10)) && token.Error() != nil {
-		assert.Failf(suite.T(), "error publish MQTT msg: ", token.Error().Error())
+		assert.NoError(suite.T(), token.Error(), "error publish MQTT")
 	}
 
 }
@@ -41,16 +41,14 @@ func (suite *MqttIotDeviceConnectorTestSuite) SetupTest() {
 	}
 
 	_, err := connector.CreateRegistry(suite.registryID, eventNotificationConfigs)
+	assert.NoError(suite.T(), err, "error publish MQTT")
 
-	if err != nil {
-		assert.Failf(suite.T(), "error when trying to create a register", err.Error())
-	} else {
+	connectorHttpDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connectorHttpDevices.SwapToRegistry(suite.registryID)
 
-		connectorHttpDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connectorHttpDevices.CreateDevice(suite.deviceIDOne)
+	connectorHttpDevices.CreateDevice(suite.deviceIDTwo)
 
-		connectorHttpDevices.CreateDevice(suite.deviceIDOne)
-		connectorHttpDevices.CreateDevice(suite.deviceIDTwo)
-	}
 }
 
 func (suite *MqttIotDeviceConnectorTestSuite) TearDownTest() {

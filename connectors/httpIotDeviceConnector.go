@@ -25,6 +25,7 @@ type HttpIotDeviceConnector struct {
 }
 
 type HttpIotDeviceConnectorInterface interface {
+	SwapToRegistry(registryID string)
 	CreateDevice(deviceID string) (*cloudiot.Device, error)
 	DeleteDevice(deviceID string) (*cloudiot.Empty, error)
 	GetDevice(deviceID string) (*cloudiot.Device, error)
@@ -66,6 +67,10 @@ func NewHttpIotConnector(registryID string) HttpIotDeviceConnectorInterface {
 	return &httpIotDeviceConnector
 }
 
+func (iotConnector *HttpIotDeviceConnector) SwapToRegistry(registryID string) {
+	iotConnector.registryID = registryID
+}
+
 func (iotConnector *HttpIotDeviceConnector) CreateDevice(deviceID string) (device *cloudiot.Device, err error) {
 
 	keyBytes, err := ioutil.ReadFile(iotConnector.publicKeyPath)
@@ -86,37 +91,27 @@ func (iotConnector *HttpIotDeviceConnector) CreateDevice(deviceID string) (devic
 	}
 
 	parent := fmt.Sprintf("projects/%s/locations/%s/registries/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID)
-	device, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.Create(parent, &deviceDef).Do()
-	if err != nil {
-		log.Errorln(err.Error())
+	if device, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.Create(parent, &deviceDef).Do(); err == nil {
+		log.Debugln("Successfully created device.")
+		log.Debugln("\tID: ", device.Id)
+		log.Debugln("\tName: ", device.Name)
 	}
-
-	log.Debugln("Successfully created device.")
-	log.Debugln("\tID: ", device.Id)
-	log.Debugln("\tName: ", device.Name)
 
 	return
 }
 
 func (iotConnector *HttpIotDeviceConnector) DeleteDevice(deviceID string) (response *cloudiot.Empty, err error) {
 	path := fmt.Sprintf("projects/%s/locations/%s/registries/%s/devices/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID, deviceID)
-	response, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.Delete(path).Do()
-	if err != nil {
-		log.Errorln(err.Error())
+	if response, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.Delete(path).Do(); err == nil {
+		log.Debugln("Deleted device!")
 	}
 
-	log.Debugln("Deleted device!")
 	return
 }
 
 func (iotConnector *HttpIotDeviceConnector) GetDevice(deviceID string) (device *cloudiot.Device, err error) {
 	path := fmt.Sprintf("projects/%s/locations/%s/registries/%s/devices/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID, deviceID)
-	device, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.Get(path).Do()
-
-	if err != nil {
-		log.Errorln(err.Error())
-	} else {
-
+	if device, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.Get(path).Do(); err == nil {
 		log.Debugln("\tId: ", device.Id)
 		for _, credential := range device.Credentials {
 			log.Debugln("\t\tCredential Expire: ", credential.ExpirationTime)
@@ -129,23 +124,20 @@ func (iotConnector *HttpIotDeviceConnector) GetDevice(deviceID string) (device *
 		log.Debugln("\tLast Heartbeat Time: ", device.LastHeartbeatTime)
 		log.Debugln("\tLast State Time: ", device.LastStateTime)
 		log.Debugln("\tNumId: ", device.NumId)
+
 	}
+
 	return
 }
 
 func (iotConnector *HttpIotDeviceConnector) GetDeviceConfigs(deviceID string) (configs []*cloudiot.DeviceConfig, err error) {
 	path := fmt.Sprintf("projects/%s/locations/%s/registries/%s/devices/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID, deviceID)
-	response, errConfig := iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.ConfigVersions.List(path).Do()
-	if errConfig != nil {
-		log.Errorln(err.Error())
-		err = errConfig
-	} else {
+	if response, err := iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.ConfigVersions.List(path).Do(); err == nil {
 		log.Debugln("Successfully retrieved device config!")
 		configs = response.DeviceConfigs
-	}
-
-	for _, config := range response.DeviceConfigs {
-		log.Debugln(config.Version, " : ", config.BinaryData)
+		for _, config := range response.DeviceConfigs {
+			log.Debugln(config.Version, " : ", config.BinaryData)
+		}
 	}
 
 	return
@@ -153,17 +145,12 @@ func (iotConnector *HttpIotDeviceConnector) GetDeviceConfigs(deviceID string) (c
 
 func (iotConnector *HttpIotDeviceConnector) GetDeviceStates(deviceID string) (states []*cloudiot.DeviceState, err error) {
 	path := fmt.Sprintf("projects/%s/locations/%s/registries/%s/devices/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID, deviceID)
-	response, errState := iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.States.List(path).Do()
-	if err != nil {
-		log.Errorln(err.Error())
-		err = errState
-	} else {
+	if response, err := iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.States.List(path).Do(); err == nil {
 		log.Debugln("Successfully retrieved device states!")
 		states = response.DeviceStates
-	}
-
-	for _, state := range response.DeviceStates {
-		log.Debugln(state.UpdateTime, " : ", state.BinaryData)
+		for _, state := range response.DeviceStates {
+			log.Debugln(state.UpdateTime, " : ", state.BinaryData)
+		}
 	}
 
 	return
@@ -171,30 +158,22 @@ func (iotConnector *HttpIotDeviceConnector) GetDeviceStates(deviceID string) (st
 
 func (iotConnector *HttpIotDeviceConnector) ListDevices() (devices []*cloudiot.Device, err error) {
 	parent := fmt.Sprintf("projects/%s/locations/%s/registries/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID)
-	response, errDevices := iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.List(parent).Do()
-	if err != nil {
-		log.Errorln(err.Error())
-		err = errDevices
-	} else {
+	if response, err := iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.List(parent).Do(); err == nil {
 		log.Debugln("Successfully retrieved devices!")
 		devices = response.Devices
-	}
+		log.Debugln("Devices:")
+		for _, device := range response.Devices {
+			log.Debugln("\t", device.Id)
+		}
 
-	log.Debugln("Devices:")
-	for _, device := range response.Devices {
-		log.Debugln("\t", device.Id)
 	}
-
 	return
 }
 
 func (iotConnector *HttpIotDeviceConnector) PatchDevice(deviceID string, newDevice *cloudiot.Device, field string) (device *cloudiot.Device, err error) {
 
 	parent := fmt.Sprintf("projects/%s/locations/%s/registries/%s/devices/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID, deviceID)
-	device, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.Patch(parent, newDevice).UpdateMask(field).Do()
-	if err != nil {
-		log.Errorln(err.Error())
-	} else {
+	if device, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.Patch(parent, newDevice).UpdateMask(field).Do(); err == nil {
 		log.Debugln("Successfully patched device.")
 	}
 
@@ -207,10 +186,7 @@ func (iotConnector *HttpIotDeviceConnector) SetDeviceConfig(deviceID string, con
 	}
 
 	path := fmt.Sprintf("projects/%s/locations/%s/registries/%s/devices/%s", iotConnector.projectID, iotConnector.region, iotConnector.registryID, deviceID)
-	deviceConfig, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.ModifyCloudToDeviceConfig(path, &req).Do()
-	if err != nil {
-		log.Errorln(err.Error())
-	} else {
+	if deviceConfig, err = iotConnector.HTTP_Client.Projects.Locations.Registries.Devices.ModifyCloudToDeviceConfig(path, &req).Do(); err == nil {
 		fmt.Fprintf(os.Stdout, "Config set!\nVersion now: %d", deviceConfig.Version)
 	}
 

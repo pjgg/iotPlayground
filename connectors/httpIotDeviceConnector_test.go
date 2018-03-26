@@ -1,6 +1,5 @@
 package connectors_test
 
-/*
 import (
 	"encoding/base64"
 	"math/rand"
@@ -17,44 +16,43 @@ import (
 func (suite *IotDeviceConnectorTestSuite) TestCreateDevice() {
 	deviceID := "my-test-device" + randStringRunes(4)
 	connector := connectors.NewHttpIotConnector(suite.registryID)
+
 	device, err := connector.CreateDevice(deviceID)
 
-	if err != nil {
-		assert.Failf(suite.T(), "error when trying to create a device", err.Error())
-	} else {
-		assert.EqualValues(suite.T(), device.Id, deviceID)
-		assert.EqualValues(suite.T(), device.Blocked, false)
-	}
+	assert.NoError(suite.T(), err, "UnexpectedError")
+	assert.NotNil(suite.T(), device)
+	assert.EqualValues(suite.T(), device.Id, deviceID)
+	assert.EqualValues(suite.T(), device.Blocked, false)
 
 }
 
 func (suite *IotDeviceConnectorTestSuite) TestGetDevice() {
 	deviceID := "my-test-device" + randStringRunes(4)
 	connectorDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connectorDevices.SwapToRegistry(suite.registryID)
+
 	connectorDevices.CreateDevice(deviceID)
 	device, err := connectorDevices.GetDevice(deviceID)
 
-	if err != nil {
-		assert.Failf(suite.T(), "error when trying to create a device", err.Error())
-	} else {
-		assert.EqualValues(suite.T(), device.Id, deviceID)
-		assert.EqualValues(suite.T(), device.Blocked, false)
-	}
+	assert.NoError(suite.T(), err, "UnexpectedError")
+	assert.NotNil(suite.T(), device)
+	assert.EqualValues(suite.T(), device.Id, deviceID)
+	assert.EqualValues(suite.T(), device.Blocked, false)
 
 }
 
 func (suite *IotDeviceConnectorTestSuite) TestSetDeviceConfig() {
 	deviceID := "my-test-device" + randStringRunes(4)
 	connectorDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connectorDevices.SwapToRegistry(suite.registryID)
+
 	connectorDevices.CreateDevice(deviceID)
 	config, err := connectorDevices.SetDeviceConfig(deviceID, "{networkID:'myNetworkID'}")
 
-	if err != nil {
-		assert.Failf(suite.T(), "set config error", err.Error())
-	} else {
-		decodedData, _ := base64.StdEncoding.DecodeString(config.BinaryData)
-		assert.EqualValues(suite.T(), decodedData, "{networkID:'myNetworkID'}")
-	}
+	assert.NoError(suite.T(), err, "UnexpectedError")
+	assert.NotNil(suite.T(), config)
+	decodedData, _ := base64.StdEncoding.DecodeString(config.BinaryData)
+	assert.EqualValues(suite.T(), decodedData, "{networkID:'myNetworkID'}")
 
 }
 
@@ -65,56 +63,50 @@ func (suite *IotDeviceConnectorTestSuite) TestGetDeviceConfigs() {
 	connectorDevices.SetDeviceConfig(deviceID, "{networkID:'myNetworkID'}")
 	config, err := connectorDevices.GetDeviceConfigs(deviceID)
 
-	if err != nil {
-		assert.Failf(suite.T(), "set config error", err.Error())
-	} else {
-		assert.EqualValues(suite.T(), len(config) > 0, true)
-	}
+	assert.NoError(suite.T(), err, "UnexpectedError")
+	assert.EqualValues(suite.T(), len(config) > 0, true)
 
 }
 
 func (suite *IotDeviceConnectorTestSuite) TestGetDeviceStates() {
 	deviceID := "my-test-device" + randStringRunes(4)
 	connectorDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connectorDevices.SwapToRegistry(suite.registryID)
+
 	connectorDevices.CreateDevice(deviceID)
 
 	deviceStates, err := connectorDevices.GetDeviceStates(deviceID)
-	if err != nil {
-		assert.Failf(suite.T(), "error retriving states", err.Error())
-	} else {
-		assert.EqualValues(suite.T(), len(deviceStates), 0)
-	}
+	assert.NoError(suite.T(), err, "UnexpectedError")
+	assert.EqualValues(suite.T(), len(deviceStates), 0)
 
 }
 
 func (suite *IotDeviceConnectorTestSuite) TestListDevices() {
 	deviceID := "my-test-device" + randStringRunes(4)
 	connectorDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connectorDevices.SwapToRegistry(suite.registryID)
+
 	connectorDevices.CreateDevice(deviceID)
 
 	devices, err := connectorDevices.ListDevices()
-	if err != nil {
-		assert.Failf(suite.T(), "error list devices", err.Error())
-	} else {
-		assert.EqualValues(suite.T(), len(devices), 1)
-	}
+	assert.NoError(suite.T(), err, "UnexpectedError")
+	assert.EqualValues(suite.T(), len(devices), 1)
 
 }
 
 func (suite *IotDeviceConnectorTestSuite) TestPatchDevice() {
 	deviceID := "my-test-device" + randStringRunes(4)
 	connectorDevices := connectors.NewHttpIotConnector(suite.registryID)
+	connectorDevices.SwapToRegistry(suite.registryID)
+
 	connectorDevices.CreateDevice(deviceID)
 	deviceToUpdate := &cloudiot.Device{
 		Metadata: map[string]string{"key": "value"},
 	}
 
 	deviceUpdated, err := connectorDevices.PatchDevice(deviceID, deviceToUpdate, "Metadata")
-	if err != nil {
-		assert.Failf(suite.T(), "error path device", err.Error())
-	} else {
-		assert.EqualValues(suite.T(), deviceUpdated.Metadata["key"], "value")
-	}
+	assert.NoError(suite.T(), err, "UnexpectedError")
+	assert.EqualValues(suite.T(), deviceUpdated.Metadata["key"], "value")
 
 }
 
@@ -129,15 +121,13 @@ func (suite *IotDeviceConnectorTestSuite) SetupTest() {
 
 	eventNotificationConfigs := []*cloudiot.EventNotificationConfig{
 		{
-			PubsubTopicName: connector.GenerateTopicName("pablo-test"),
+			PubsubTopicName: connector.GenerateTopicName(suite.configuration.DeviceTelemetryTopic),
 		},
 	}
 
 	_, err := connector.CreateRegistry(suite.registryID, eventNotificationConfigs)
+	assert.NoError(suite.T(), err, "UnexpectedError")
 
-	if err != nil {
-		assert.Failf(suite.T(), "error when trying to create a register", err.Error())
-	}
 }
 
 func (suite *IotDeviceConnectorTestSuite) TearDownTest() {
@@ -161,4 +151,3 @@ func TestIotDeviceConnectorTestSuite(t *testing.T) {
 	iotReg.registryID = "test-registry-" + randStringRunes(4)
 	suite.Run(t, iotReg)
 }
-*/

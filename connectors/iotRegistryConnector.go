@@ -67,10 +67,7 @@ func (iotConnector *IotRegistryConnector) CreateRegistry(registryID string, conf
 	}
 
 	parentPath := fmt.Sprintf("projects/%s/locations/%s", iotConnector.projectID, iotConnector.region)
-	registry, err = iotConnector.Client.Projects.Locations.Registries.Create(parentPath, &registryDef).Do()
-	if err != nil {
-		log.Errorln(err.Error())
-	} else {
+	if registry, err = iotConnector.Client.Projects.Locations.Registries.Create(parentPath, &registryDef).Do(); err == nil {
 		log.Debugln("Created registry:")
 		log.Debugln("\tID: ", registry.Id)
 		log.Debugln("\tHTTP: ", registry.HttpConfig.HttpEnabledState)
@@ -83,21 +80,16 @@ func (iotConnector *IotRegistryConnector) CreateRegistry(registryID string, conf
 
 func (iotConnector *IotRegistryConnector) DeleteRegistry(registryID string) (empty *cloudiot.Empty, err error) {
 	name := fmt.Sprintf("projects/%s/locations/%s/registries/%s", iotConnector.projectID, iotConnector.region, registryID)
-	empty, err = iotConnector.Client.Projects.Locations.Registries.Delete(name).Do()
-	if err != nil {
-		log.Errorln(err.Error())
+	if iotConnector.Client.Projects.Locations.Registries.Delete(name).Do(); err == nil {
+		log.Debugln("Deleted registry")
 	}
 
-	log.Debugln("Deleted registry")
 	return
 }
 
 func (iotConnector *IotRegistryConnector) GetRegistry(registryID string) (registry *cloudiot.DeviceRegistry, err error) {
 	parent := fmt.Sprintf("projects/%s/locations/%s/registries/%s", iotConnector.projectID, iotConnector.region, registryID)
 	registry, err = iotConnector.Client.Projects.Locations.Registries.Get(parent).Do()
-	if err != nil {
-		log.Errorln(err.Error())
-	}
 
 	return
 }
@@ -105,16 +97,13 @@ func (iotConnector *IotRegistryConnector) GetRegistry(registryID string) (regist
 func (iotConnector *IotRegistryConnector) GetRegistryIam(registryID string) (policy *cloudiot.Policy, err error) {
 	var req cloudiot.GetIamPolicyRequest
 	path := fmt.Sprintf("projects/%s/locations/%s/registries/%s", iotConnector.projectID, iotConnector.region, registryID)
-	policy, err = iotConnector.Client.Projects.Locations.Registries.GetIamPolicy(path, &req).Do()
-	if err != nil {
-		log.Errorln(err.Error())
-	}
-
-	log.Debugln("Policy:")
-	for _, binding := range policy.Bindings {
-		log.Debugln(os.Stdout, "Role: %s\n", binding.Role)
-		for _, member := range binding.Members {
-			log.Debugln(os.Stdout, "\tMember: %s\n", member)
+	if policy, err = iotConnector.Client.Projects.Locations.Registries.GetIamPolicy(path, &req).Do(); err == nil {
+		log.Debugln("Policy:")
+		for _, binding := range policy.Bindings {
+			log.Debugln(os.Stdout, "Role: %s\n", binding.Role)
+			for _, member := range binding.Members {
+				log.Debugln(os.Stdout, "\tMember: %s\n", member)
+			}
 		}
 	}
 
@@ -123,17 +112,15 @@ func (iotConnector *IotRegistryConnector) GetRegistryIam(registryID string) (pol
 
 func (iotConnector *IotRegistryConnector) ListRegistries() (registries []*cloudiot.DeviceRegistry, err error) {
 	parentPath := fmt.Sprintf("projects/%s/locations/%s", iotConnector.projectID, iotConnector.region)
-	response, err := iotConnector.Client.Projects.Locations.Registries.List(parentPath).Do()
-	if err != nil {
-		log.Errorln(err.Error())
+	if response, err := iotConnector.Client.Projects.Locations.Registries.List(parentPath).Do(); err == nil {
+		fmt.Println("Registries:")
+		for _, registry := range response.DeviceRegistries {
+			log.Debugln("\t", registry.Name)
+		}
+		registries = response.DeviceRegistries
 	}
 
-	fmt.Println("Registries:")
-	for _, registry := range response.DeviceRegistries {
-		log.Debugln("\t", registry.Name)
-	}
-
-	return response.DeviceRegistries, err
+	return registries, err
 }
 
 func (iotConnector *IotRegistryConnector) SetRegistryIam(registryID string, member string, role string) (policy *cloudiot.Policy, err error) {
@@ -148,12 +135,9 @@ func (iotConnector *IotRegistryConnector) SetRegistryIam(registryID string, memb
 		},
 	}
 	path := fmt.Sprintf("projects/%s/locations/%s/registries/%s", iotConnector.projectID, iotConnector.region, registryID)
-	policy, err = iotConnector.Client.Projects.Locations.Registries.SetIamPolicy(path, &req).Do()
-	if err != nil {
-		log.Errorln(err.Error())
+	if policy, err = iotConnector.Client.Projects.Locations.Registries.SetIamPolicy(path, &req).Do(); err == nil {
+		log.Debugln("Policy setted!")
 	}
-
-	log.Debugln("Policy setted!")
 
 	return
 }

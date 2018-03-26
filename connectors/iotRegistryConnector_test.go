@@ -1,6 +1,5 @@
 package connectors_test
 
-/*
 import (
 	"math/rand"
 	"testing"
@@ -16,8 +15,8 @@ import (
 func (suite *IotRegistryConnectorTestSuite) TestGenerateTopicName() {
 	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
 
-	expectedTopicName := "projects/" + suite.configuration.GcloudProjectID + "/topics/pablo-test"
-	result := connector.GenerateTopicName("pablo-test")
+	expectedTopicName := "projects/" + suite.configuration.GcloudProjectID + "/topics/" + suite.configuration.DeviceTelemetryTopic
+	result := connector.GenerateTopicName(suite.configuration.DeviceTelemetryTopic)
 
 	assert.EqualValues(suite.T(), result, expectedTopicName)
 
@@ -26,7 +25,9 @@ func (suite *IotRegistryConnectorTestSuite) TestGenerateTopicName() {
 func (suite *IotRegistryConnectorTestSuite) TestGetRegistry() {
 	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
 
-	registry, _ := connector.GetRegistry(suite.registryID)
+	registry, err := connector.GetRegistry(suite.registryID)
+	assert.NoError(suite.T(), err, "UnexpectedError")
+	assert.NotNil(suite.T(), registry)
 	assert.EqualValues(suite.T(), registry.Id, suite.registryID)
 	assert.EqualValues(suite.T(), registry.HttpConfig.HttpEnabledState, "HTTP_ENABLED")
 }
@@ -42,12 +43,14 @@ func (suite *IotRegistryConnectorTestSuite) setRegistryIamTest() {
 	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
 
 	policy, _ := connector.SetRegistryIam(suite.registryID, "pablosDevice@bq.com", "admin")
+	assert.NotNil(suite.T(), policy)
 	assert.EqualValues(suite.T(), policy.Version, 1)
 }
 
 func (suite *IotRegistryConnectorTestSuite) getRegistryIamTest() {
 	connector := connectors.NewIotRegistryConnector(connectors.HTTP, suite.configuration.GcloudProjectID, suite.configuration.GcloudRegion)
 	policy, _ := connector.GetRegistryIam(suite.registryID)
+	assert.NotNil(suite.T(), policy)
 	assert.EqualValues(suite.T(), policy.Version, 1)
 }
 
@@ -62,15 +65,13 @@ func (suite *IotRegistryConnectorTestSuite) SetupTest() {
 
 	eventNotificationConfigs := []*cloudiot.EventNotificationConfig{
 		{
-			PubsubTopicName: connector.GenerateTopicName("pablo-test"),
+			PubsubTopicName: connector.GenerateTopicName(suite.configuration.DeviceTelemetryTopic),
 		},
 	}
 
 	_, err := connector.CreateRegistry(suite.registryID, eventNotificationConfigs)
+	assert.NoError(suite.T(), err, "UnexpectedError")
 
-	if err != nil {
-		assert.Failf(suite.T(), "error when trying to create a register", err.Error())
-	}
 }
 
 func (suite *IotRegistryConnectorTestSuite) TearDownTest() {
@@ -88,4 +89,3 @@ func TestIotRegistryConnectorTestSuite(t *testing.T) {
 	iotReg.registryID = "test-registry-" + randStringRunes(4)
 	suite.Run(t, iotReg)
 }
-*/
