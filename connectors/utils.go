@@ -32,9 +32,9 @@ type KeyType int
 
 const (
 	// RSA_PEM ...
-	rsaPem KeyType = 1 + iota
+	RsaPem KeyType = 1 + iota
 	// ES256_PEM ...
-	es256Pem
+	Es256Pem
 )
 
 var keyTypeName = [...]string{
